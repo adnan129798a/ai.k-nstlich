@@ -84,6 +84,21 @@ def generate_script(topic: str) -> str:
     )
 
 
+def generate_video_prompt(topic: str) -> str:
+    return (
+        f"🎥 وصف فيديو احترافي عن: {topic}\n\n"
+        f"Prompt:\n"
+        f"Create a short cinematic vertical video about {topic}. "
+        f"Make it realistic, smooth camera movement, dramatic lighting, "
+        f"high detail, emotional atmosphere, 9:16 format for social media.\n\n"
+        f"المشاهد المقترحة:\n"
+        f"1) لقطة افتتاحية قوية\n"
+        f"2) حركة كاميرا بطيئة على العنصر الرئيسي\n"
+        f"3) لقطة وسطية فيها تفاصيل واضحة\n"
+        f"4) نهاية جذابة مناسبة لريلز أو تيك توك"
+    )
+
+
 async def send_generated_image(chat_id: int, prompt: str, style: str, context: ContextTypes.DEFAULT_TYPE):
     image_bytes = generate_image_bytes(prompt, style=style)
 
@@ -109,22 +124,22 @@ async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if msg == TEXTS[LANG]["content_ideas"]:
         USER_STATES[user.id] = "content_ideas"
-        await update.message.reply_text("اكتب المجال أو نوع المحتوى.")
+        await update.message.reply_text(TEXTS[LANG]["ask_content"])
         return
 
     if msg == TEXTS[LANG]["captions"]:
         USER_STATES[user.id] = "captions"
-        await update.message.reply_text("اكتب وصفًا قصيرًا للمحتوى.")
+        await update.message.reply_text(TEXTS[LANG]["ask_caption"])
         return
 
     if msg == TEXTS[LANG]["hashtags"]:
         USER_STATES[user.id] = "hashtags"
-        await update.message.reply_text("اكتب موضوع المحتوى.")
+        await update.message.reply_text(TEXTS[LANG]["ask_hashtags"])
         return
 
     if msg == TEXTS[LANG]["video_script"]:
         USER_STATES[user.id] = "video_script"
-        await update.message.reply_text("اكتب فكرة الفيديو.")
+        await update.message.reply_text(TEXTS[LANG]["ask_script"])
         return
 
     if msg == TEXTS[LANG]["invite"]:
@@ -151,6 +166,7 @@ async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         else:
             USER_STATES[user.id] = "image_ai"
+            await update.message.reply_text(TEXTS[LANG]["image_ok"])
             await update.message.reply_text(TEXTS[LANG]["ask_image"])
         return
 
@@ -164,7 +180,9 @@ async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 reply_markup=unlock_keyboard(LANG, REQUIRED_CHANNEL_URL, invite_link)
             )
         else:
-            await update.message.reply_text("🎥 ميزة الفيديو سنربطها بعد خطوة الصور مباشرة.")
+            USER_STATES[user.id] = "video_ai"
+            await update.message.reply_text(TEXTS[LANG]["video_ok"])
+            await update.message.reply_text(TEXTS[LANG]["ask_video"])
         return
 
     state = USER_STATES.get(user.id)
@@ -193,10 +211,17 @@ async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         USER_STATES.pop(user.id, None)
         LAST_IMAGE_PROMPTS[user.id] = msg
         await update.message.reply_text(TEXTS[LANG]["image_generating"])
+
         try:
             await send_generated_image(update.effective_chat.id, msg, "realistic", context)
         except Exception as e:
             await update.message.reply_text(f"{TEXTS[LANG]['image_failed']}\n{str(e)}")
+        return
+
+    if state == "video_ai":
+        USER_STATES.pop(user.id, None)
+        await update.message.reply_text(TEXTS[LANG]["video_generating"])
+        await update.message.reply_text(generate_video_prompt(msg))
         return
 
 
