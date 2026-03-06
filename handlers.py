@@ -112,8 +112,9 @@ def generate_video_prompt(topic: str) -> str:
     return (
         f"🎥 طلب فيديو جاهز عن: {topic}\n\n"
         f"Video Prompt:\n"
-        f\"\"\"Create a short cinematic video about {topic}. "
-        f"Make it realistic, smooth camera movement, dramatic lighting, high detail, emotional atmosphere, social-media friendly, vertical 9:16.\"\"\"\n\n"
+        f"Create a short cinematic video about {topic}. "
+        f"Make it realistic, smooth camera movement, dramatic lighting, high detail, "
+        f"emotional atmosphere, social-media friendly, vertical 9:16.\n\n"
         f"اقتراح المشاهد:\n"
         f"1) لقطة افتتاحية قوية\n"
         f"2) حركة كاميرا بطيئة على العنصر الرئيسي\n"
@@ -130,7 +131,6 @@ async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message.text.strip()
     invite_link = get_invite_link(context.bot.username, user.id)
 
-    # الأزرار الرئيسية
     if msg == TEXTS[LANG]["content_ideas"]:
         USER_STATES[user.id] = "content_ideas"
         await update.message.reply_text(TEXTS[LANG]["ask_content"])
@@ -176,6 +176,7 @@ async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             USER_STATES[user.id] = "image_ai"
             await update.message.reply_text(TEXTS[LANG]["image_ok"])
+            await update.message.reply_text(TEXTS[LANG]["ask_image"])
         return
 
     if msg == TEXTS[LANG]["video_ai"]:
@@ -190,9 +191,9 @@ async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             USER_STATES[user.id] = "video_ai"
             await update.message.reply_text(TEXTS[LANG]["video_ok"])
+            await update.message.reply_text(TEXTS[LANG]["ask_video"])
         return
 
-    # الحالات بعد إدخال النص
     state = USER_STATES.get(user.id)
 
     if state == "content_ideas":
