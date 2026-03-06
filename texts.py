@@ -1,7 +1,6 @@
 TEXTS = {
     "ar": {
-        "welcome": "أهلًا بك في AI Creator Studio",
-        "main_menu": "اختر من القائمة:",
+        "welcome": "أهلاً بك في AI Creator Studio",
         "content_ideas": "🧠 أفكار محتوى",
         "captions": "✍️ كابشن",
         "hashtags": "#️⃣ هاشتاغات",
@@ -13,34 +12,18 @@ TEXTS = {
         "locked": "لفتح هذه الميزة يجب:\n1) الاشتراك في القناة\n2) دعوة صديق واحد عبر رابطك الخاص",
         "ref_count": "عدد الدعوات: {count}/1",
         "invite_text": "هذا رابط الدعوة الخاص بك:\n{link}",
-        "image_ok": "ميزة الصور مفتوحة لك ✅",
-        "video_ok": "ميزة الفيديو مفتوحة لك ✅",
+        "image_ok": "✅ ميزة الصور مفتوحة لك\nاكتب الآن وصف الصورة التي تريدها.",
+        "video_ok": "✅ ميزة الفيديو مفتوحة لك\nاكتب الآن وصف الفيديو الذي تريده.",
         "join_channel": "📢 اشترك في القناة",
         "share_invite": "🔗 رابط الدعوة",
         "check_unlock": "✅ تحقق من الفتح",
-        "unlocked_now": "تم فتح الميزة لك بنجاح ✅",
-        "still_locked": "لم يتحقق الشرط بعد.\nاشترك في القناة وادعُ صديقًا واحدًا."
-    },
-    "en": {
-        "welcome": "Welcome to AI Creator Studio",
-        "main_menu": "Choose from menu",
-        "content_ideas": "🧠 Content Ideas",
-        "captions": "✍️ Captions",
-        "hashtags": "#️⃣ Hashtags",
-        "video_script": "🎬 Video Script",
-        "image_ai": "🖼️ Create Image",
-        "video_ai": "🎥 Create Video",
-        "invite": "👥 Invite Friends",
-        "my_ref": "📊 Referrals",
-        "locked": "To unlock this feature:\n1) Join the channel\n2) Invite 1 friend using your personal link",
-        "ref_count": "Referrals: {count}/1",
-        "invite_text": "Your invite link:\n{link}",
-        "image_ok": "Image feature unlocked ✅",
-        "video_ok": "Video feature unlocked ✅",
-        "join_channel": "📢 Join Channel",
-        "share_invite": "🔗 Invite Link",
-        "check_unlock": "✅ Check Unlock",
-        "unlocked_now": "Feature unlocked successfully ✅",
-        "still_locked": "Requirement not completed yet.\nJoin the channel and invite 1 friend."
+        "unlocked_now": "✅ تم فتح الميزة لك بنجاح",
+        "still_locked": "لم يتحقق الشرط بعد.\nاشترك في القناة وادعُ صديقًا واحدًا.",
+        "ask_content": "اكتب المجال أو نوع المحتوى.",
+        "ask_caption": "اكتب وصفًا قصيرًا للمحتوى.",
+        "ask_hashtags": "اكتب موضوع المحتوى.",
+        "ask_script": "اكتب فكرة الفيديو.",
+        "ask_image": "اكتب وصف الصورة التي تريد إنشاءها.",
+        "ask_video": "اكتب وصف الفيديو الذي تريد إنشاءه."
     }
 }
