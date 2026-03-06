@@ -1,6 +1,6 @@
 TEXTS = {
     "ar": {
-        "welcome": "أهلاً بك في AI Creator Studio",
+        "welcome": "أهلًا بك في AI Creator Studio",
         "main_menu": "اختر من القائمة:",
         "content_ideas": "🧠 أفكار محتوى",
         "captions": "✍️ كابشن",
@@ -10,7 +10,6 @@ TEXTS = {
         "video_ai": "🎥 إنشاء فيديو",
         "invite": "👥 دعوة الأصدقاء",
         "my_ref": "📊 عدد الدعوات",
-        "ask_topic": "اكتب المجال أو الموضوع.",
         "locked": "لفتح هذه الميزة يجب:\n1) الاشتراك في القناة\n2) دعوة صديق واحد عبر رابطك الخاص",
         "ref_count": "عدد الدعوات: {count}/1",
         "invite_text": "هذا رابط الدعوة الخاص بك:\n{link}",
@@ -22,7 +21,6 @@ TEXTS = {
         "unlocked_now": "تم فتح الميزة لك بنجاح ✅",
         "still_locked": "لم يتحقق الشرط بعد.\nاشترك في القناة وادعُ صديقًا واحدًا."
     },
-
     "en": {
         "welcome": "Welcome to AI Creator Studio",
         "main_menu": "Choose from menu",
@@ -34,7 +32,6 @@ TEXTS = {
         "video_ai": "🎥 Create Video",
         "invite": "👥 Invite Friends",
         "my_ref": "📊 Referrals",
-        "ask_topic": "Write topic.",
         "locked": "To unlock this feature:\n1) Join the channel\n2) Invite 1 friend using your personal link",
         "ref_count": "Referrals: {count}/1",
         "invite_text": "Your invite link:\n{link}",

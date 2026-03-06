@@ -4,7 +4,6 @@ from handlers import start, text, check_unlock_callback
 from database import init_db
 from config import BOT_TOKEN
 
-
 init_db()
 
 app = Application.builder().token(BOT_TOKEN).build()
