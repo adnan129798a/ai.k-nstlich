@@ -3,9 +3,9 @@ import os
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 REQUIRED_CHANNEL = os.getenv("REQUIRED_CHANNEL")
 REQUIRED_CHANNEL_URL = os.getenv("REQUIRED_CHANNEL_URL")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 DEFAULT_COINS = 20
-
 SUPPORTED_LANGUAGES = ["ar", "en", "de", "tr"]
 
 if not BOT_TOKEN:
@@ -16,3 +16,6 @@ if not REQUIRED_CHANNEL:
 
 if not REQUIRED_CHANNEL_URL:
     raise ValueError("REQUIRED_CHANNEL_URL is missing.")
+
+if not OPENAI_API_KEY:
+    raise ValueError("OPENAI_API_KEY is missing.")
