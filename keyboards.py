@@ -1,32 +1,22 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
-
+from telegram import ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
 from texts import TEXTS
 
 
-def subscribe_keyboard(lang: str, channel_url: str) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton(TEXTS[lang]["join_channel"], url=channel_url)],
-        [InlineKeyboardButton(TEXTS[lang]["check_subscription"], callback_data="check_subscription")]
-    ])
-
-
-def main_menu_keyboard(lang: str) -> ReplyKeyboardMarkup:
+def menu(lang):
     return ReplyKeyboardMarkup(
         [
             [TEXTS[lang]["content_ideas"], TEXTS[lang]["captions"]],
             [TEXTS[lang]["hashtags"], TEXTS[lang]["video_script"]],
             [TEXTS[lang]["image_ai"], TEXTS[lang]["video_ai"]],
-            [TEXTS[lang]["invite_friends"], TEXTS[lang]["my_referrals"]],
-            [TEXTS[lang]["coins"], TEXTS[lang]["language"]],
+            [TEXTS[lang]["invite"], TEXTS[lang]["my_ref"]]
         ],
         resize_keyboard=True
     )
 
 
-def language_keyboard() -> InlineKeyboardMarkup:
+def unlock_keyboard(lang, channel_url, invite_link):
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("العربية", callback_data="lang_ar")],
-        [InlineKeyboardButton("English", callback_data="lang_en")],
-        [InlineKeyboardButton("Deutsch", callback_data="lang_de")],
-        [InlineKeyboardButton("Türkçe", callback_data="lang_tr")],
+        [InlineKeyboardButton(TEXTS[lang]["join_channel"], url=channel_url)],
+        [InlineKeyboardButton(TEXTS[lang]["share_invite"], url=invite_link)],
+        [InlineKeyboardButton(TEXTS[lang]["check_unlock"], callback_data="check_unlock")]
     ])
