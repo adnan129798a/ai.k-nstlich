@@ -15,6 +15,8 @@ def main_menu_keyboard(lang: str) -> ReplyKeyboardMarkup:
         [
             [TEXTS[lang]["content_ideas"], TEXTS[lang]["captions"]],
             [TEXTS[lang]["hashtags"], TEXTS[lang]["video_script"]],
+            [TEXTS[lang]["image_ai"], TEXTS[lang]["video_ai"]],
+            [TEXTS[lang]["invite_friends"], TEXTS[lang]["my_referrals"]],
             [TEXTS[lang]["coins"], TEXTS[lang]["language"]],
         ],
         resize_keyboard=True
