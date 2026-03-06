@@ -7,6 +7,8 @@ from database import (
     get_user_coins,
     get_user_language,
     set_user_language,
+    apply_referral,
+    get_referral_count,
 )
 from keyboards import subscribe_keyboard, main_menu_keyboard, language_keyboard
 from texts import TEXTS
@@ -63,6 +65,33 @@ async def require_subscription(update: Update, context: ContextTypes.DEFAULT_TYP
     return False
 
 
+async def feature_unlocked(user_id: int, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    subscribed = await is_user_subscribed(user_id, context)
+    referrals = get_referral_count(user_id)
+    return subscribed and referrals >= 3
+
+
+async def send_referral_info(update: Update, context: ContextTypes.DEFAULT_TYPE, lang: str):
+    user = update.effective_user
+    if not user:
+        return
+
+    username = context.bot.username
+    invite_link = f"https://t.me/{username}?start=ref_{user.id}"
+    count = get_referral_count(user.id)
+
+    msg = (
+        TEXTS[lang]["referral_message"].format(link=invite_link)
+        + "\n\n"
+        + TEXTS[lang]["your_referral_count"].format(count=count)
+    )
+
+    if update.message:
+        await update.message.reply_text(msg)
+    elif update.callback_query:
+        await update.callback_query.message.reply_text(msg)
+
+
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if not user or not update.message:
@@ -76,6 +105,15 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         first_name=user.first_name,
         language=lang
     )
+
+    if context.args:
+        first_arg = context.args[0]
+        if first_arg.startswith("ref_"):
+            try:
+                referrer_id = int(first_arg.replace("ref_", ""))
+                apply_referral(user.id, referrer_id)
+            except Exception:
+                pass
 
     if not await require_subscription(update, context, lang):
         return
@@ -127,10 +165,7 @@ async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-# ---------- AI FUNCTIONS ----------
-
 def generate_content_ideas(topic: str, lang: str) -> str:
-
     if lang == "ar":
         prompt = f"""
 اعطني 5 أفكار فيديوهات قصيرة وقوية لصانع محتوى في مجال:
@@ -141,69 +176,57 @@ def generate_content_ideas(topic: str, lang: str) -> str:
 - بداية قوية للفيديو
 - كابشن
 """
-
     elif lang == "de":
-        prompt = f"Give me 5 strong short video ideas for a content creator in the niche: {topic}"
-
+        prompt = f"Gib mir 5 starke Kurzvideo-Ideen für einen Content Creator im Bereich: {topic}. Für jede Idee: Idee, Hook, Caption."
     elif lang == "tr":
-        prompt = f"{topic} alanında içerik üreten biri için 5 güçlü kısa video fikri ver"
-
+        prompt = f"Bana {topic} alanında içerik üreten biri için 5 güçlü kısa video fikri ver. Her biri için fikir, hook ve caption yaz."
     else:
-        prompt = f"Give me 5 strong short video ideas for a content creator in the niche: {topic}"
+        prompt = f"Give me 5 strong short video ideas for a content creator in this niche: {topic}. For each idea include the idea, hook, and caption."
 
     return ask_ai(prompt)
 
 
 def generate_caption(topic: str, lang: str) -> str:
-
     if lang == "ar":
         prompt = f"اكتب كابشن احترافي وجذاب لمنشور عن: {topic}"
-
     elif lang == "de":
-        prompt = f"Write a professional caption about: {topic}"
-
+        prompt = f"Schreibe eine professionelle und ansprechende Caption über: {topic}"
     elif lang == "tr":
-        prompt = f"{topic} hakkında etkileyici bir caption yaz"
-
+        prompt = f"{topic} hakkında profesyonel ve etkileyici bir caption yaz"
     else:
-        prompt = f"Write a professional caption about: {topic}"
+        prompt = f"Write a professional and engaging caption about: {topic}"
 
     return ask_ai(prompt)
 
 
 def generate_hashtags(topic: str, lang: str) -> str:
-
     if lang == "ar":
-        prompt = f"اعطني 10 هاشتاغات قوية لمحتوى عن: {topic}"
-
+        prompt = f"اعطني 10 هاشتاغات قوية ومناسبة لمحتوى عن: {topic}"
+    elif lang == "de":
+        prompt = f"Gib mir 10 starke und passende Hashtags für Inhalte über: {topic}"
+    elif lang == "tr":
+        prompt = f"Bana {topic} hakkında içerik için 10 güçlü ve uygun hashtag ver"
     else:
-        prompt = f"Give me 10 strong hashtags for content about: {topic}"
+        prompt = f"Give me 10 strong and relevant hashtags for content about: {topic}"
 
     return ask_ai(prompt)
 
 
 def generate_script(topic: str, lang: str) -> str:
-
     if lang == "ar":
-        prompt = f"""
-اكتب سكربت فيديو قصير عن:
-{topic}
-
-اجعله مناسب لفيديو تيك توك او ريلز.
-"""
-
+        prompt = f"اكتب سكربت فيديو قصير وجذاب عن: {topic} مع بداية قوية ونهاية فيها دعوة للتفاعل."
+    elif lang == "de":
+        prompt = f"Schreibe ein kurzes, starkes Video-Skript über: {topic} mit starkem Einstieg und Call-to-Action am Ende."
+    elif lang == "tr":
+        prompt = f"{topic} hakkında güçlü giriş ve etkileşim çağrısı içeren kısa bir video senaryosu yaz."
     else:
-        prompt = f"Write a short video script about: {topic}"
+        prompt = f"Write a short and engaging video script about: {topic} with a strong hook and a call to action at the end."
 
     return ask_ai(prompt)
 
 
-# ---------- MESSAGE HANDLER ----------
-
 async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
     user = update.effective_user
-
     if not user or not update.message or not update.message.text:
         return
 
@@ -244,6 +267,35 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             TEXTS[lang]["choose_language"],
             reply_markup=language_keyboard()
         )
+        return
+
+    if text == TEXTS[lang]["invite_friends"]:
+        await send_referral_info(update, context, lang)
+        return
+
+    if text == TEXTS[lang]["my_referrals"]:
+        count = get_referral_count(user.id)
+        await update.message.reply_text(TEXTS[lang]["your_referral_count"].format(count=count))
+        return
+
+    if text == TEXTS[lang]["image_ai"]:
+        if not await feature_unlocked(user.id, context):
+            await update.message.reply_text(TEXTS[lang]["premium_locked"])
+            await send_referral_info(update, context, lang)
+            return
+
+        await update.message.reply_text(TEXTS[lang]["premium_unlocked"])
+        await update.message.reply_text(TEXTS[lang]["image_coming"])
+        return
+
+    if text == TEXTS[lang]["video_ai"]:
+        if not await feature_unlocked(user.id, context):
+            await update.message.reply_text(TEXTS[lang]["premium_locked"])
+            await send_referral_info(update, context, lang)
+            return
+
+        await update.message.reply_text(TEXTS[lang]["premium_unlocked"])
+        await update.message.reply_text(TEXTS[lang]["video_coming"])
         return
 
     state = USER_STATES.get(user.id)
