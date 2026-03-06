@@ -1,13 +1,17 @@
+from io import BytesIO
+
 from telegram import Update
 from telegram.ext import ContextTypes
 
 from database import add_user, set_referral, get_referrals
 from texts import TEXTS
-from keyboards import menu, unlock_keyboard
+from keyboards import menu, unlock_keyboard, image_style_keyboard
 from config import REQUIRED_CHANNEL, REQUIRED_CHANNEL_URL
+from image_tools import generate_image_bytes
 
 LANG = "ar"
 USER_STATES = {}
+LAST_IMAGE_PROMPTS = {}
 
 
 def get_invite_link(bot_username, user_id):
@@ -49,20 +53,10 @@ def generate_content_ideas(topic: str) -> str:
     return (
         f"🧠 5 أفكار محتوى عن: {topic}\n\n"
         f"1) 3 أخطاء شائعة في {topic}\n"
-        f"   البداية: لا ترتكب هذا الخطأ إذا كنت مهتمًا بـ {topic}\n"
-        f"   CTA: اكتب رأيك في التعليقات\n\n"
         f"2) أفضل نصيحة للمبتدئين في {topic}\n"
-        f"   البداية: لو كنت تبدأ اليوم في {topic} فاسمع هذه النصيحة\n"
-        f"   CTA: احفظ الفيديو\n\n"
         f"3) يوم في حياة شخص يعمل في {topic}\n"
-        f"   البداية: هل تريد أن تعرف كيف يبدو يومي في {topic}؟\n"
-        f"   CTA: تابع للمزيد\n\n"
         f"4) مقارنة قبل/بعد في {topic}\n"
-        f"   البداية: الفرق بين قبل وبعد في {topic} صادم\n"
-        f"   CTA: شارك الفيديو\n\n"
-        f"5) أسرار النجاح في {topic}\n"
-        f"   البداية: هذه أسرار لا يخبرك بها أحد في {topic}\n"
-        f"   CTA: هل تريد جزءًا ثانيًا؟"
+        f"5) أسرار النجاح في {topic}"
     )
 
 
@@ -77,49 +71,31 @@ def generate_caption(topic: str) -> str:
 
 def generate_hashtags(topic: str) -> str:
     clean = topic.replace(" ", "_")
-    return (
-        f"#️⃣ هاشتاغات مناسبة لـ {topic}\n\n"
-        f"#{clean} #{topic} #viral #fyp #reels #content #trend #tiktok #explore #video"
-    )
+    return f"#️⃣ هاشتاغات مناسبة:\n\n#{clean} #{topic} #viral #fyp #reels #content #trend #tiktok"
 
 
 def generate_script(topic: str) -> str:
     return (
         f"🎬 سكربت فيديو عن: {topic}\n\n"
         f"المشهد 1: بداية قوية\n"
-        f"\"إذا كنت مهتمًا بـ {topic} فانتبه لهذا!\"\n\n"
         f"المشهد 2: شرح مختصر\n"
-        f"قدّم أهم نقطة بشكل سريع وواضح.\n\n"
         f"المشهد 3: مثال\n"
-        f"اعرض مثالًا أو تجربة أو نتيجة.\n\n"
-        f"المشهد 4: النهاية\n"
-        f"\"إذا أعجبك الفيديو تابعني للمزيد عن {topic}\""
+        f"المشهد 4: دعوة للتفاعل والمتابعة"
     )
 
 
-def generate_image_prompt(topic: str) -> str:
-    return (
-        f"🖼️ طلب صورة جاهز عن: {topic}\n\n"
-        f"Prompt:\n"
-        f"Ultra realistic {topic}, cinematic lighting, high detail, sharp focus, dramatic composition, 4k, realistic textures, professional photography style.\n\n"
-        f"Negative Prompt:\n"
-        f"low quality, blurry, distorted, extra limbs, bad anatomy, watermark, text.\n\n"
-        f"Suggested Ratio: 1:1 أو 9:16"
-    )
+async def send_generated_image(chat_id: int, prompt: str, style: str, context: ContextTypes.DEFAULT_TYPE):
+    image_bytes = generate_image_bytes(prompt, style=style)
 
+    bio = BytesIO(image_bytes)
+    bio.name = "generated.png"
+    bio.seek(0)
 
-def generate_video_prompt(topic: str) -> str:
-    return (
-        f"🎥 طلب فيديو جاهز عن: {topic}\n\n"
-        f"Video Prompt:\n"
-        f"Create a short cinematic video about {topic}. "
-        f"Make it realistic, smooth camera movement, dramatic lighting, high detail, "
-        f"emotional atmosphere, social-media friendly, vertical 9:16.\n\n"
-        f"اقتراح المشاهد:\n"
-        f"1) لقطة افتتاحية قوية\n"
-        f"2) حركة كاميرا بطيئة على العنصر الرئيسي\n"
-        f"3) لقطة وسطية فيها تفاصيل واضحة\n"
-        f"4) نهاية جذابة مناسبة لريلز أو تيك توك"
+    await context.bot.send_photo(
+        chat_id=chat_id,
+        photo=bio,
+        caption=TEXTS[LANG]["image_generated"],
+        reply_markup=image_style_keyboard(LANG)
     )
 
 
@@ -133,22 +109,22 @@ async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if msg == TEXTS[LANG]["content_ideas"]:
         USER_STATES[user.id] = "content_ideas"
-        await update.message.reply_text(TEXTS[LANG]["ask_content"])
+        await update.message.reply_text("اكتب المجال أو نوع المحتوى.")
         return
 
     if msg == TEXTS[LANG]["captions"]:
         USER_STATES[user.id] = "captions"
-        await update.message.reply_text(TEXTS[LANG]["ask_caption"])
+        await update.message.reply_text("اكتب وصفًا قصيرًا للمحتوى.")
         return
 
     if msg == TEXTS[LANG]["hashtags"]:
         USER_STATES[user.id] = "hashtags"
-        await update.message.reply_text(TEXTS[LANG]["ask_hashtags"])
+        await update.message.reply_text("اكتب موضوع المحتوى.")
         return
 
     if msg == TEXTS[LANG]["video_script"]:
         USER_STATES[user.id] = "video_script"
-        await update.message.reply_text(TEXTS[LANG]["ask_script"])
+        await update.message.reply_text("اكتب فكرة الفيديو.")
         return
 
     if msg == TEXTS[LANG]["invite"]:
@@ -175,7 +151,6 @@ async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         else:
             USER_STATES[user.id] = "image_ai"
-            await update.message.reply_text(TEXTS[LANG]["image_ok"])
             await update.message.reply_text(TEXTS[LANG]["ask_image"])
         return
 
@@ -189,9 +164,7 @@ async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 reply_markup=unlock_keyboard(LANG, REQUIRED_CHANNEL_URL, invite_link)
             )
         else:
-            USER_STATES[user.id] = "video_ai"
-            await update.message.reply_text(TEXTS[LANG]["video_ok"])
-            await update.message.reply_text(TEXTS[LANG]["ask_video"])
+            await update.message.reply_text("🎥 ميزة الفيديو سنربطها بعد خطوة الصور مباشرة.")
         return
 
     state = USER_STATES.get(user.id)
@@ -217,13 +190,13 @@ async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if state == "image_ai":
-        await update.message.reply_text(generate_image_prompt(msg))
         USER_STATES.pop(user.id, None)
-        return
-
-    if state == "video_ai":
-        await update.message.reply_text(generate_video_prompt(msg))
-        USER_STATES.pop(user.id, None)
+        LAST_IMAGE_PROMPTS[user.id] = msg
+        await update.message.reply_text(TEXTS[LANG]["image_generating"])
+        try:
+            await send_generated_image(update.effective_chat.id, msg, "realistic", context)
+        except Exception as e:
+            await update.message.reply_text(f"{TEXTS[LANG]['image_failed']}\n{str(e)}")
         return
 
 
@@ -247,3 +220,34 @@ async def check_unlock_callback(update: Update, context: ContextTypes.DEFAULT_TY
             TEXTS[LANG]["still_locked"],
             reply_markup=unlock_keyboard(LANG, REQUIRED_CHANNEL_URL, invite_link)
         )
+
+
+async def image_style_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    user = update.effective_user
+
+    if not query or not user:
+        return
+
+    await query.answer()
+
+    prompt = LAST_IMAGE_PROMPTS.get(user.id)
+    if not prompt:
+        await query.message.reply_text("اكتب وصف صورة جديد أولًا.")
+        return
+
+    style_map = {
+        "img_hyper_real": "hyper_real",
+        "img_anime": "anime",
+        "img_cinematic": "cinematic",
+        "img_regenerate": "realistic",
+    }
+
+    style = style_map.get(query.data, "realistic")
+
+    await query.message.reply_text(TEXTS[LANG]["image_generating"])
+
+    try:
+        await send_generated_image(query.message.chat_id, prompt, style, context)
+    except Exception as e:
+        await query.message.reply_text(f"{TEXTS[LANG]['image_failed']}\n{str(e)}")
