@@ -15,7 +15,7 @@ def menu(lang):
 
 
 def unlock_keyboard(lang, channel_url, invite_link):
-    share_url = f"https://t.me/share/url?url={invite_link}&text=جرب هذا البوت الذكي"
+    share_url = f"https://t.me/share/url?url={invite_link}&text=🔥 جرب هذا البوت الذكي لصناعة المحتوى"
 
     return InlineKeyboardMarkup([
         [InlineKeyboardButton(TEXTS[lang]["join_channel"], url=channel_url)],
