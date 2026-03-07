@@ -1,16 +1,68 @@
-from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters
+TEXTS = {
+    "ar": {
+        "welcome": "أهلاً بك في AI Creator Studio",
 
-from handlers import start, text, check_unlock_callback, image_style_callback
-from database import init_db
-from config import BOT_TOKEN
+        "content_ideas": "🧠 أفكار محتوى",
+        "captions": "✍️ كابشن",
+        "hashtags": "#️⃣ هاشتاغات",
+        "video_script": "🎬 سكربت فيديو",
 
-init_db()
+        "image_ai": "🖼️ إنشاء صورة",
+        "video_ai": "🎥 إنشاء فيديو",
+        "edit_photo": "👤 تعديل صورة",
 
-app = Application.builder().token(BOT_TOKEN).build()
+        "invite": "👥 دعوة الأصدقاء",
+        "my_ref": "📊 عدد الدعوات",
 
-app.add_handler(CommandHandler("start", start))
-app.add_handler(CallbackQueryHandler(check_unlock_callback, pattern="^check_unlock$"))
-app.add_handler(CallbackQueryHandler(image_style_callback, pattern="^img_"))
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text))
+        "locked": "لفتح هذه الميزة يجب:\n1) الاشتراك في القناة\n2) دعوة صديق واحد عبر رابطك الخاص",
+        "ref_count": "عدد الدعوات: {count}/1",
+        "invite_text": "هذا رابط الدعوة الخاص بك:\n{link}",
 
-app.run_polling()
+        "image_ok": "✅ ميزة الصور مفتوحة لك\nاكتب الآن وصف الصورة التي تريدها.",
+        "video_ok": "✅ ميزة الفيديو مفتوحة لك\nاكتب الآن وصف الفيديو الذي تريده.",
+
+        "join_channel": "📢 اشترك في القناة",
+        "share_invite": "🔗 رابط الدعوة",
+        "check_unlock": "✅ تحقق من الفتح",
+        "unlocked_now": "✅ تم فتح الميزة لك بنجاح",
+        "still_locked": "لم يتحقق الشرط بعد.\nاشترك في القناة وادعُ صديقًا واحدًا.",
+
+        "ask_content": "اكتب المجال أو نوع المحتوى.",
+        "ask_caption": "اكتب وصفًا قصيرًا للمحتوى.",
+        "ask_hashtags": "اكتب موضوع المحتوى.",
+        "ask_script": "اكتب فكرة الفيديو.",
+        "ask_image": "اكتب وصف الصورة التي تريد إنشاءها.",
+        "ask_video": "اكتب وصف الفيديو الذي تريد إنشاءه.",
+
+        "image_generated": "✅ تم إنشاء الصورة",
+        "more_realistic": "✨ أكثر واقعية",
+        "anime_style": "🎌 أنيمي",
+        "cinematic_style": "🎬 سينمائية",
+        "regenerate": "🔁 إعادة التوليد",
+        "image_generating": "⏳ جارٍ إنشاء الصورة...",
+        "image_failed": "حدث خطأ أثناء إنشاء الصورة.",
+
+        "video_generating": "⏳ تم تجهيز وصف فيديو احترافي لك.",
+        "video_failed": "حدث خطأ أثناء تجهيز وصف الفيديو.",
+
+        "send_photo_to_edit": "📸 أرسل الصورة التي تريد تعديلها.",
+        "photo_received": "✅ تم استلام الصورة. اختر نوع التعديل:",
+        "edit_auto": "✨ تحسين تلقائي",
+        "edit_handsome": "😎 أكثر وسامة",
+        "edit_anime": "🎌 تحويل أنيمي",
+        "edit_cinematic": "🎬 ستايل سينمائي",
+        "edit_clothes": "👔 تغيير الملابس",
+        "edit_hair": "💇 تغيير الشعر",
+        "edit_beard": "🧔 تحسين اللحية",
+        "edit_background": "🌆 تغيير الخلفية",
+        "edit_lighting": "💡 تحسين الإضاءة",
+        "edit_colors": "🎨 تلوين احترافي",
+        "edit_portrait": "📸 بورتريه احترافي",
+        "edit_skin": "🪄 تنعيم البشرة",
+        "edit_luxury": "🔥 ستايل فخم",
+        "edit_style": "🕶️ تغيير اللوك",
+        "edit_animated": "🎞️ صورة متحركة",
+        "edit_feature_soon": "✅ تم اختيار هذا النوع من التعديل.\nسيتم ربطه فعليًا بمحرك الذكاء الاصطناعي في الخطوة التالية.",
+        "please_send_photo_first": "أرسل صورة أولًا حتى أستطيع تعديلها."
+    }
+}
