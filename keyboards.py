@@ -8,7 +8,7 @@ def menu(lang):
             [TEXTS[lang]["content_ideas"], TEXTS[lang]["captions"]],
             [TEXTS[lang]["hashtags"], TEXTS[lang]["video_script"]],
             [TEXTS[lang]["image_ai"], TEXTS[lang]["video_ai"]],
-            [TEXTS[lang]["edit_photo"]],
+            [TEXTS[lang]["edit_photo"]],   # زر تعديل الصورة
             [TEXTS[lang]["invite"], TEXTS[lang]["my_ref"]],
         ],
         resize_keyboard=True
