@@ -1,60 +1,59 @@
-import requests
-import time
+from openai import OpenAI
 from config import OPENAI_API_KEY, OPENAI_VIDEO_MODEL
 
-
-headers = {
-    "Authorization": f"Bearer {OPENAI_API_KEY}",
-    "Content-Type": "application/json"
-}
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 
-def create_video_job(prompt, seconds=15, aspect_ratio="9:16"):
-
-    url = "https://api.openai.com/v1/videos"
-
-    data = {
-        "model": OPENAI_VIDEO_MODEL,
-        "prompt": prompt,
-        "seconds": seconds,
-        "aspect_ratio": aspect_ratio
+def ratio_to_size(ratio: str) -> str:
+    mapping = {
+        "9:16": "720x1280",
+        "16:9": "1280x720",
+        "1:1": "1024x1792",  # أقرب خيار مدعوم حاليًا، لأن 1:1 غير ظاهر في القيم الرسمية
     }
-
-    r = requests.post(url, headers=headers, json=data)
-
-    if r.status_code != 200:
-        raise Exception(r.text)
-
-    return r.json()
+    return mapping.get(ratio, "720x1280")
 
 
-def wait_for_video(video_id):
+def seconds_to_allowed(seconds: int) -> int:
+    # API الحالية تدعم فقط 4 / 8 / 12
+    if seconds <= 4:
+        return 4
+    if seconds <= 8:
+        return 8
+    return 12
 
-    url = f"https://api.openai.com/v1/videos/{video_id}"
 
-    while True:
+def create_video_job(prompt: str, seconds: int = 12, aspect_ratio: str = "9:16"):
+    allowed_seconds = seconds_to_allowed(seconds)
+    size = ratio_to_size(aspect_ratio)
 
-        r = requests.get(url, headers=headers)
-        data = r.json()
+    video = client.videos.create(
+        model=OPENAI_VIDEO_MODEL,
+        prompt=prompt,
+        seconds=str(allowed_seconds),
+        size=size,
+    )
+    return video
 
-        status = data.get("status")
 
+def wait_for_video(video_id: str, max_checks: int = 180):
+    for _ in range(max_checks):
+        video = client.videos.retrieve(video_id)
+
+        status = getattr(video, "status", "")
         if status == "completed":
-            return data
+            return video
 
         if status == "failed":
-            raise Exception("Video generation failed")
+            error = getattr(video, "error", None)
+            message = getattr(error, "message", "Video generation failed")
+            raise Exception(message)
 
+        import time
         time.sleep(5)
 
+    raise Exception("Video generation timed out")
 
-def download_video_bytes(video_id):
 
-    url = f"https://api.openai.com/v1/videos/{video_id}/content"
-
-    r = requests.get(url, headers=headers)
-
-    if r.status_code != 200:
-        raise Exception(r.text)
-
-    return r.content
+def download_video_bytes(video_id: str) -> bytes:
+    content = client.videos.download_content(video_id, variant="video")
+    return content.read()
