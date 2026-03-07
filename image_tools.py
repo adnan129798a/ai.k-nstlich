@@ -1,5 +1,4 @@
 import base64
-import tempfile
 from openai import OpenAI
 from config import OPENAI_API_KEY, OPENAI_IMAGE_MODEL
 
@@ -39,23 +38,6 @@ def generate_image_bytes(user_prompt: str, style: str = "realistic") -> bytes:
         size="1024x1024",
         quality="medium"
     )
-
-    image_b64 = result.data[0].b64_json
-    return base64.b64decode(image_b64)
-
-
-def edit_image_bytes(image_bytes: bytes, instruction: str) -> bytes:
-    with tempfile.NamedTemporaryFile(suffix=".jpg") as temp_img:
-        temp_img.write(image_bytes)
-        temp_img.flush()
-
-        with open(temp_img.name, "rb") as img_file:
-            result = client.images.edit(
-                model=OPENAI_IMAGE_MODEL,
-                image=img_file,
-                prompt=instruction,
-                size="1024x1024"
-            )
 
     image_b64 = result.data[0].b64_json
     return base64.b64decode(image_b64)

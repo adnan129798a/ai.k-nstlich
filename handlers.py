@@ -8,7 +8,8 @@ from texts import TEXTS
 from keyboards import menu, unlock_keyboard, image_style_keyboard, photo_edit_keyboard
 from config import REQUIRED_CHANNEL, REQUIRED_CHANNEL_URL
 from ai_tools import ask_ai
-from image_tools import generate_image_bytes, edit_image_bytes
+from image_tools import generate_image_bytes
+from photo_enhance import auto_enhance, brighten, contrast, smooth, sharpen, color_boost, custom_edit
 
 LANG = "ar"
 USER_STATES = {}
@@ -80,25 +81,6 @@ def video_prompt(topic: str) -> str:
 """
 
 
-def preset_instruction_map():
-    return {
-        "edit_auto": "حسّن هذه الصورة تلقائيًا مع الحفاظ على نفس الشخص ونفس ملامح الوجه قدر الإمكان، وتحسين الإضاءة والوضوح والألوان بشكل احترافي.",
-        "edit_handsome": "حافظ على نفس الشخص ونفس ملامح الوجه قدر الإمكان، واجعله أكثر وسامة وجاذبية بشكل طبيعي وواقعي، مع تحسين البشرة والإضاءة والملامح بدون تغيير الهوية.",
-        "edit_anime": "حوّل هذه الصورة إلى ستايل أنيمي مع الحفاظ على نفس الشخص وملامحه الأساسية.",
-        "edit_cinematic": "اجعل هذه الصورة سينمائية جدًا مع الحفاظ على نفس الشخص، وإضافة إضاءة درامية وألوان فيلمية وخلفية احترافية.",
-        "edit_clothes": "حافظ على نفس الشخص وغيّر الملابس إلى مظهر أنيق واحترافي جدًا، مع الحفاظ على الوجه نفسه.",
-        "edit_hair": "حافظ على نفس الشخص وعدّل الشعر ليبدو أفضل وأكثر أناقة بشكل طبيعي.",
-        "edit_beard": "حافظ على نفس الشخص وحسّن شكل اللحية وجعلها مرتبة وأنيقة.",
-        "edit_background": "حافظ على نفس الشخص وغيّر الخلفية إلى خلفية أجمل واحترافية.",
-        "edit_lighting": "حافظ على نفس الشخص وحسّن الإضاءة بشكل احترافي جدًا.",
-        "edit_colors": "حافظ على نفس الشخص وحسّن الألوان والتباين بشكل احترافي.",
-        "edit_portrait": "حوّل هذه الصورة إلى بورتريه احترافي مع الحفاظ على نفس الشخص والوجه.",
-        "edit_skin": "حافظ على نفس الشخص وحسّن البشرة بشكل طبيعي واحترافي بدون مبالغة.",
-        "edit_luxury": "حافظ على نفس الشخص واجعل الصورة تبدو فخمة جدًا وراقية من حيث اللباس والإضاءة والخلفية.",
-        "edit_style": "حافظ على نفس الشخص وغير اللوك إلى ستايل أكثر جاذبية وعصرية.",
-    }
-
-
 async def send_generated_image(chat_id: int, prompt: str, style: str, context: ContextTypes.DEFAULT_TYPE):
     image_bytes = generate_image_bytes(prompt, style=style)
 
@@ -114,13 +96,9 @@ async def send_generated_image(chat_id: int, prompt: str, style: str, context: C
     )
 
 
-async def send_edited_image(chat_id: int, file_id: str, instruction: str, context: ContextTypes.DEFAULT_TYPE):
-    tg_file = await context.bot.get_file(file_id)
-    image_data = await tg_file.download_as_bytearray()
-    edited_bytes = edit_image_bytes(bytes(image_data), instruction)
-
-    bio = BytesIO(edited_bytes)
-    bio.name = "edited.png"
+async def send_edited_photo(chat_id: int, image_bytes: bytes, context: ContextTypes.DEFAULT_TYPE):
+    bio = BytesIO(image_bytes)
+    bio.name = "edited.jpg"
     bio.seek(0)
 
     await context.bot.send_photo(
@@ -128,6 +106,12 @@ async def send_edited_image(chat_id: int, file_id: str, instruction: str, contex
         photo=bio,
         caption=TEXTS[LANG]["edit_done"]
     )
+
+
+async def get_user_photo_bytes(file_id: str, context: ContextTypes.DEFAULT_TYPE) -> bytes:
+    tg_file = await context.bot.get_file(file_id)
+    data = await tg_file.download_as_bytearray()
+    return bytes(data)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -275,13 +259,13 @@ async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(TEXTS[LANG]["please_send_photo_first"])
             return
 
+        await update.message.reply_text(TEXTS[LANG]["edit_custom_help"])
         await update.message.reply_text(TEXTS[LANG]["edit_generating"])
+
         try:
-            instruction = (
-                "حافظ على نفس الشخص ونفس ملامح الوجه قدر الإمكان، "
-                "ونفّذ هذا الطلب بدقة: " + msg
-            )
-            await send_edited_image(update.effective_chat.id, file_id, instruction, context)
+            original = await get_user_photo_bytes(file_id, context)
+            edited = custom_edit(original, msg)
+            await send_edited_photo(update.effective_chat.id, edited, context)
         except Exception as e:
             await update.message.reply_text(f"{TEXTS[LANG]['edit_failed']}\n{str(e)}")
         return
@@ -381,14 +365,27 @@ async def photo_edit_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
         await query.message.reply_text(TEXTS[LANG]["edit_custom_prompt"])
         return
 
-    instruction = preset_instruction_map().get(data)
-    if not instruction:
-        await query.message.reply_text(TEXTS[LANG]["edit_failed"])
-        return
-
     await query.message.reply_text(TEXTS[LANG]["edit_generating"])
 
     try:
-        await send_edited_image(query.message.chat_id, file_id, instruction, context)
+        original = await get_user_photo_bytes(file_id, context)
+
+        if data == "edit_auto":
+            edited = auto_enhance(original)
+        elif data == "edit_brighten":
+            edited = brighten(original)
+        elif data == "edit_contrast":
+            edited = contrast(original)
+        elif data == "edit_smooth":
+            edited = smooth(original)
+        elif data == "edit_sharpen":
+            edited = sharpen(original)
+        elif data == "edit_color":
+            edited = color_boost(original)
+        else:
+            await query.message.reply_text(TEXTS[LANG]["edit_failed"])
+            return
+
+        await send_edited_photo(query.message.chat_id, edited, context)
     except Exception as e:
         await query.message.reply_text(f"{TEXTS[LANG]['edit_failed']}\n{str(e)}")
