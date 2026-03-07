@@ -5,13 +5,14 @@ from telegram.ext import ContextTypes
 
 from database import add_user, set_referral, get_referrals
 from texts import TEXTS
-from keyboards import menu, unlock_keyboard, image_style_keyboard
+from keyboards import menu, unlock_keyboard, image_style_keyboard, photo_edit_keyboard
 from config import REQUIRED_CHANNEL, REQUIRED_CHANNEL_URL
 from image_tools import generate_image_bytes
 
 LANG = "ar"
 USER_STATES = {}
 LAST_IMAGE_PROMPTS = {}
+LAST_USER_PHOTOS = {}
 
 
 def get_invite_link(bot_username, user_id):
@@ -143,16 +144,17 @@ async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if msg == TEXTS[LANG]["invite"]:
-        await update.message.reply_text(
-            TEXTS[LANG]["invite_text"].format(link=invite_link)
-        )
+        await update.message.reply_text(TEXTS[LANG]["invite_text"].format(link=invite_link))
         return
 
     if msg == TEXTS[LANG]["my_ref"]:
         count = get_referrals(user.id)
-        await update.message.reply_text(
-            TEXTS[LANG]["ref_count"].format(count=count)
-        )
+        await update.message.reply_text(TEXTS[LANG]["ref_count"].format(count=count))
+        return
+
+    if msg == TEXTS[LANG]["edit_photo"]:
+        USER_STATES[user.id] = "waiting_edit_photo"
+        await update.message.reply_text(TEXTS[LANG]["send_photo_to_edit"])
         return
 
     if msg == TEXTS[LANG]["image_ai"]:
@@ -225,6 +227,26 @@ async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
 
+async def photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    if not user or not update.message or not update.message.photo:
+        return
+
+    state = USER_STATES.get(user.id)
+
+    if state != "waiting_edit_photo":
+        return
+
+    photo = update.message.photo[-1]
+    LAST_USER_PHOTOS[user.id] = photo.file_id
+    USER_STATES.pop(user.id, None)
+
+    await update.message.reply_text(
+        TEXTS[LANG]["photo_received"],
+        reply_markup=photo_edit_keyboard(LANG)
+    )
+
+
 async def check_unlock_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     user = update.effective_user
@@ -276,3 +298,19 @@ async def image_style_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         await send_generated_image(query.message.chat_id, prompt, style, context)
     except Exception as e:
         await query.message.reply_text(f"{TEXTS[LANG]['image_failed']}\n{str(e)}")
+
+
+async def photo_edit_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    user = update.effective_user
+
+    if not query or not user:
+        return
+
+    await query.answer()
+
+    if user.id not in LAST_USER_PHOTOS:
+        await query.message.reply_text(TEXTS[LANG]["please_send_photo_first"])
+        return
+
+    await query.message.reply_text(TEXTS[LANG]["edit_feature_soon"])
