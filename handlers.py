@@ -8,7 +8,7 @@ from texts import TEXTS
 from keyboards import menu, unlock_keyboard, image_style_keyboard, photo_edit_keyboard
 from config import REQUIRED_CHANNEL, REQUIRED_CHANNEL_URL
 from ai_tools import ask_ai
-from image_tools import generate_image_bytes
+from image_tools import generate_image_bytes, edit_image_bytes
 from photo_enhance import auto_enhance, brighten, contrast, smooth, sharpen, color_boost, custom_edit
 
 LANG = "ar"
@@ -79,6 +79,70 @@ def video_prompt(topic: str) -> str:
 - الجو العام
 - المقاس المناسب للسوشال ميديا 9:16
 """
+
+
+def strong_preserve_instruction(extra: str) -> str:
+    return (
+        "Preserve the exact same person, same identity, same facial features, same face shape, "
+        "same eyes, same nose, same mouth, same beard, same hairstyle, same body pose, same phone, "
+        "same camera angle. Do not change the person's identity or face. "
+        "Only apply the requested change to clothes, background, mood, or artistic style. "
+        + extra
+    )
+
+
+def preset_instruction_map():
+    return {
+        "edit_formal_suit": strong_preserve_instruction(
+            "Change only the outfit into a luxurious black formal suit with elegant details."
+        ),
+        "edit_casual_style": strong_preserve_instruction(
+            "Change only the outfit into a stylish casual modern look."
+        ),
+        "edit_luxury_style": strong_preserve_instruction(
+            "Make the overall image luxurious and premium, with elegant outfit and classy atmosphere."
+        ),
+        "edit_street_style": strong_preserve_instruction(
+            "Change only the clothes into fashionable streetwear."
+        ),
+        "edit_gym_style": strong_preserve_instruction(
+            "Change only the clothes into premium athletic gym wear."
+        ),
+        "edit_arabic_wear": strong_preserve_instruction(
+            "Change only the outfit into elegant Arabic traditional wear."
+        ),
+        "edit_black_outfit": strong_preserve_instruction(
+            "Change only the clothes into a clean stylish black outfit."
+        ),
+        "edit_white_outfit": strong_preserve_instruction(
+            "Change only the clothes into a clean stylish white outfit."
+        ),
+        "edit_city_bg": strong_preserve_instruction(
+            "Keep the same person and outfit, change only the background to a modern city."
+        ),
+        "edit_night_bg": strong_preserve_instruction(
+            "Keep the same person and outfit, change only the background to a cinematic night city."
+        ),
+        "edit_studio_bg": strong_preserve_instruction(
+            "Keep the same person and outfit, change only the background to a professional studio."
+        ),
+        "edit_luxury_bg": strong_preserve_instruction(
+            "Keep the same person and outfit, change only the background to a luxurious interior."
+        ),
+        "edit_nature_bg": strong_preserve_instruction(
+            "Keep the same person and outfit, change only the background to elegant nature."
+        ),
+        "edit_cafe_bg": strong_preserve_instruction(
+            "Keep the same person and outfit, change only the background to a stylish cafe."
+        ),
+        "edit_cinematic": strong_preserve_instruction(
+            "Keep the same person. Add cinematic lighting and cinematic color grading."
+        ),
+        "edit_anime": (
+            "Transform this image into anime style while preserving the same person, same identity, "
+            "same facial structure, same hairstyle, same pose, and make the face as close as possible."
+        ),
+    }
 
 
 async def send_generated_image(chat_id: int, prompt: str, style: str, context: ContextTypes.DEFAULT_TYPE):
@@ -259,12 +323,13 @@ async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(TEXTS[LANG]["please_send_photo_first"])
             return
 
-        await update.message.reply_text(TEXTS[LANG]["edit_custom_help"])
+        await update.message.reply_text(TEXTS[LANG]["edit_note_preserve"])
         await update.message.reply_text(TEXTS[LANG]["edit_generating"])
 
         try:
             original = await get_user_photo_bytes(file_id, context)
-            edited = custom_edit(original, msg)
+            instruction = strong_preserve_instruction(msg)
+            edited = edit_image_bytes(original, instruction)
             await send_edited_photo(update.effective_chat.id, edited, context)
         except Exception as e:
             await update.message.reply_text(f"{TEXTS[LANG]['edit_failed']}\n{str(e)}")
@@ -383,8 +448,12 @@ async def photo_edit_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
         elif data == "edit_color":
             edited = color_boost(original)
         else:
-            await query.message.reply_text(TEXTS[LANG]["edit_failed"])
-            return
+            instruction = preset_instruction_map().get(data)
+            if not instruction:
+                await query.message.reply_text(TEXTS[LANG]["edit_failed"])
+                return
+            await query.message.reply_text(TEXTS[LANG]["edit_note_preserve"])
+            edited = edit_image_bytes(original, instruction)
 
         await send_edited_photo(query.message.chat_id, edited, context)
     except Exception as e:

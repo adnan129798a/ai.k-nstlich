@@ -42,5 +42,24 @@ def photo_edit_keyboard(lang):
         [InlineKeyboardButton(TEXTS[lang]["edit_smooth"], callback_data="edit_smooth")],
         [InlineKeyboardButton(TEXTS[lang]["edit_sharpen"], callback_data="edit_sharpen")],
         [InlineKeyboardButton(TEXTS[lang]["edit_color"], callback_data="edit_color")],
+
+        [InlineKeyboardButton(TEXTS[lang]["edit_formal_suit"], callback_data="edit_formal_suit")],
+        [InlineKeyboardButton(TEXTS[lang]["edit_casual_style"], callback_data="edit_casual_style")],
+        [InlineKeyboardButton(TEXTS[lang]["edit_luxury_style"], callback_data="edit_luxury_style")],
+        [InlineKeyboardButton(TEXTS[lang]["edit_street_style"], callback_data="edit_street_style")],
+        [InlineKeyboardButton(TEXTS[lang]["edit_gym_style"], callback_data="edit_gym_style")],
+        [InlineKeyboardButton(TEXTS[lang]["edit_arabic_wear"], callback_data="edit_arabic_wear")],
+        [InlineKeyboardButton(TEXTS[lang]["edit_black_outfit"], callback_data="edit_black_outfit")],
+        [InlineKeyboardButton(TEXTS[lang]["edit_white_outfit"], callback_data="edit_white_outfit")],
+
+        [InlineKeyboardButton(TEXTS[lang]["edit_city_bg"], callback_data="edit_city_bg")],
+        [InlineKeyboardButton(TEXTS[lang]["edit_night_bg"], callback_data="edit_night_bg")],
+        [InlineKeyboardButton(TEXTS[lang]["edit_studio_bg"], callback_data="edit_studio_bg")],
+        [InlineKeyboardButton(TEXTS[lang]["edit_luxury_bg"], callback_data="edit_luxury_bg")],
+        [InlineKeyboardButton(TEXTS[lang]["edit_nature_bg"], callback_data="edit_nature_bg")],
+        [InlineKeyboardButton(TEXTS[lang]["edit_cafe_bg"], callback_data="edit_cafe_bg")],
+
+        [InlineKeyboardButton(TEXTS[lang]["edit_anime"], callback_data="edit_anime")],
+        [InlineKeyboardButton(TEXTS[lang]["edit_cinematic"], callback_data="edit_cinematic")],
         [InlineKeyboardButton(TEXTS[lang]["edit_custom"], callback_data="edit_custom")],
     ])
