@@ -1,44 +1,16 @@
-TEXTS = {
-    "ar": {
-        "welcome": "أهلاً بك في AI Creator Studio",
-        "content_ideas": "🧠 أفكار محتوى",
-        "captions": "✍️ كابشن",
-        "hashtags": "#️⃣ هاشتاغات",
-        "video_script": "🎬 سكربت فيديو",
-        "image_ai": "🖼️ إنشاء صورة",
-        "video_ai": "🎥 إنشاء فيديو",
-        "invite": "👥 دعوة الأصدقاء",
-        "my_ref": "📊 عدد الدعوات",
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters
 
-        "locked": "لفتح هذه الميزة يجب:\n1) الاشتراك في القناة\n2) دعوة صديق واحد عبر رابطك الخاص",
-        "ref_count": "عدد الدعوات: {count}/1",
-        "invite_text": "هذا رابط الدعوة الخاص بك:\n{link}",
+from handlers import start, text, check_unlock_callback, image_style_callback
+from database import init_db
+from config import BOT_TOKEN
 
-        "image_ok": "✅ ميزة الصور مفتوحة لك\nاكتب الآن وصف الصورة التي تريدها.",
-        "video_ok": "✅ ميزة الفيديو مفتوحة لك\nاكتب الآن وصف الفيديو الذي تريده.",
+init_db()
 
-        "join_channel": "📢 اشترك في القناة",
-        "share_invite": "🔗 رابط الدعوة",
-        "check_unlock": "✅ تحقق من الفتح",
-        "unlocked_now": "✅ تم فتح الميزة لك بنجاح",
-        "still_locked": "لم يتحقق الشرط بعد.\nاشترك في القناة وادعُ صديقًا واحدًا.",
+app = Application.builder().token(BOT_TOKEN).build()
 
-        "ask_content": "اكتب المجال أو نوع المحتوى.",
-        "ask_caption": "اكتب وصفًا قصيرًا للمحتوى.",
-        "ask_hashtags": "اكتب موضوع المحتوى.",
-        "ask_script": "اكتب فكرة الفيديو.",
-        "ask_image": "اكتب وصف الصورة التي تريد إنشاءها.",
-        "ask_video": "اكتب وصف الفيديو الذي تريد إنشاءه.",
+app.add_handler(CommandHandler("start", start))
+app.add_handler(CallbackQueryHandler(check_unlock_callback, pattern="^check_unlock$"))
+app.add_handler(CallbackQueryHandler(image_style_callback, pattern="^img_"))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text))
 
-        "image_generated": "✅ تم إنشاء الصورة",
-        "more_realistic": "✨ أكثر واقعية",
-        "anime_style": "🎌 أنيمي",
-        "cinematic_style": "🎬 سينمائية",
-        "regenerate": "🔁 إعادة التوليد",
-        "image_generating": "⏳ جارٍ إنشاء الصورة...",
-        "image_failed": "حدث خطأ أثناء إنشاء الصورة.",
-
-        "video_generating": "⏳ تم تجهيز وصف فيديو احترافي لك.",
-        "video_failed": "حدث خطأ أثناء تجهيز وصف الفيديو."
-    }
-}
+app.run_polling()
