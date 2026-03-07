@@ -5,6 +5,9 @@ REQUIRED_CHANNEL = os.getenv("REQUIRED_CHANNEL")
 REQUIRED_CHANNEL_URL = os.getenv("REQUIRED_CHANNEL_URL")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
+OPENAI_TEXT_MODEL = os.getenv("OPENAI_TEXT_MODEL", "gpt-4.1-mini")
+OPENAI_IMAGE_MODEL = os.getenv("OPENAI_IMAGE_MODEL", "gpt-image-1")
+
 if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN is missing.")
 
