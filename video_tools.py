@@ -1,56 +1,60 @@
-import time
 import requests
+import time
 from config import OPENAI_API_KEY, OPENAI_VIDEO_MODEL
 
 
-BASE_URL = "https://api.openai.com/v1/videos"
+headers = {
+    "Authorization": f"Bearer {OPENAI_API_KEY}",
+    "Content-Type": "application/json"
+}
 
 
-def _headers():
-    return {
-        "Authorization": f"Bearer {OPENAI_API_KEY}",
-        "Content-Type": "application/json",
-    }
+def create_video_job(prompt, seconds=15, aspect_ratio="9:16"):
 
+    url = "https://api.openai.com/v1/videos"
 
-def create_video_job(prompt: str, seconds: int, aspect_ratio: str):
-    payload = {
+    data = {
         "model": OPENAI_VIDEO_MODEL,
         "prompt": prompt,
         "seconds": seconds,
-        "aspect_ratio": aspect_ratio,
+        "aspect_ratio": aspect_ratio
     }
 
-    response = requests.post(BASE_URL, headers=_headers(), json=payload, timeout=120)
-    response.raise_for_status()
-    return response.json()
+    r = requests.post(url, headers=headers, json=data)
+
+    if r.status_code != 200:
+        raise Exception(r.text)
+
+    return r.json()
 
 
-def get_video(video_id: str):
-    response = requests.get(f"{BASE_URL}/{video_id}", headers=_headers(), timeout=120)
-    response.raise_for_status()
-    return response.json()
+def wait_for_video(video_id):
 
+    url = f"https://api.openai.com/v1/videos/{video_id}"
 
-def download_video_bytes(video_id: str) -> bytes:
-    response = requests.get(f"{BASE_URL}/{video_id}/content", headers=_headers(), timeout=300)
-    response.raise_for_status()
-    return response.content
+    while True:
 
+        r = requests.get(url, headers=headers)
+        data = r.json()
 
-def wait_for_video(video_id: str, max_wait_seconds: int = 900, poll_every: int = 10):
-    start = time.time()
+        status = data.get("status")
 
-    while time.time() - start < max_wait_seconds:
-        data = get_video(video_id)
-        status = data.get("status", "").lower()
-
-        if status in {"completed", "succeeded", "ready"}:
+        if status == "completed":
             return data
 
-        if status in {"failed", "error", "cancelled"}:
-            raise RuntimeError(f"Video generation failed: {data}")
+        if status == "failed":
+            raise Exception("Video generation failed")
 
-        time.sleep(poll_every)
+        time.sleep(5)
 
-    raise TimeoutError("Video generation timed out")
+
+def download_video_bytes(video_id):
+
+    url = f"https://api.openai.com/v1/videos/{video_id}/content"
+
+    r = requests.get(url, headers=headers)
+
+    if r.status_code != 200:
+        raise Exception(r.text)
+
+    return r.content
