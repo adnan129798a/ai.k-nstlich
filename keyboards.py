@@ -50,5 +50,5 @@ def photo_edit_keyboard(lang):
         [InlineKeyboardButton(TEXTS[lang]["edit_skin"], callback_data="edit_skin")],
         [InlineKeyboardButton(TEXTS[lang]["edit_luxury"], callback_data="edit_luxury")],
         [InlineKeyboardButton(TEXTS[lang]["edit_style"], callback_data="edit_style")],
-        [InlineKeyboardButton(TEXTS[lang]["edit_animated"], callback_data="edit_animated")],
+        [InlineKeyboardButton(TEXTS[lang]["edit_custom"], callback_data="edit_custom")],
     ])

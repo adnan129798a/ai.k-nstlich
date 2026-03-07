@@ -7,7 +7,8 @@ from database import add_user, set_referral, get_referrals
 from texts import TEXTS
 from keyboards import menu, unlock_keyboard, image_style_keyboard, photo_edit_keyboard
 from config import REQUIRED_CHANNEL, REQUIRED_CHANNEL_URL
-from image_tools import generate_image_bytes
+from ai_tools import ask_ai
+from image_tools import generate_image_bytes, edit_image_bytes
 
 LANG = "ar"
 USER_STATES = {}
@@ -25,6 +26,108 @@ async def is_subscribed(user_id: int, context: ContextTypes.DEFAULT_TYPE):
         return member.status in ["member", "administrator", "creator"]
     except Exception:
         return False
+
+
+def content_ideas_prompt(topic: str) -> str:
+    return f"""
+اعطني 5 أفكار محتوى احترافية عن: {topic}
+
+لكل فكرة اكتب:
+- عنوان الفكرة
+- Hook قوي
+- CTA قصير
+واجعلها مناسبة لريلز وتيك توك.
+"""
+
+
+def captions_prompt(topic: str) -> str:
+    return f"""
+اكتب لي 3 كابشنات احترافية وجذابة عن: {topic}
+واجعلها قصيرة ومناسبة للسوشال ميديا.
+"""
+
+
+def hashtags_prompt(topic: str) -> str:
+    return f"""
+اعطني 15 هاشتاغ مناسب لمحتوى عن: {topic}
+واجعلها مزيج عربي وإنجليزي.
+"""
+
+
+def script_prompt(topic: str) -> str:
+    return f"""
+اكتب سكربت فيديو قصير واحترافي عن: {topic}
+
+الشكل:
+- Hook
+- Body
+- CTA
+ويكون مناسب لفيديو قصير.
+"""
+
+
+def video_prompt(topic: str) -> str:
+    return f"""
+اكتب وصف فيديو احترافي جاهز للتوليد بالذكاء الاصطناعي عن: {topic}
+
+اكتب:
+- prompt إنجليزي قوي
+- نوع اللقطات
+- حركة الكاميرا
+- الإضاءة
+- الجو العام
+- المقاس المناسب للسوشال ميديا 9:16
+"""
+
+
+def preset_instruction_map():
+    return {
+        "edit_auto": "حسّن هذه الصورة تلقائيًا مع الحفاظ على نفس الشخص ونفس ملامح الوجه قدر الإمكان، وتحسين الإضاءة والوضوح والألوان بشكل احترافي.",
+        "edit_handsome": "حافظ على نفس الشخص ونفس ملامح الوجه قدر الإمكان، واجعله أكثر وسامة وجاذبية بشكل طبيعي وواقعي، مع تحسين البشرة والإضاءة والملامح بدون تغيير الهوية.",
+        "edit_anime": "حوّل هذه الصورة إلى ستايل أنيمي مع الحفاظ على نفس الشخص وملامحه الأساسية.",
+        "edit_cinematic": "اجعل هذه الصورة سينمائية جدًا مع الحفاظ على نفس الشخص، وإضافة إضاءة درامية وألوان فيلمية وخلفية احترافية.",
+        "edit_clothes": "حافظ على نفس الشخص وغيّر الملابس إلى مظهر أنيق واحترافي جدًا، مع الحفاظ على الوجه نفسه.",
+        "edit_hair": "حافظ على نفس الشخص وعدّل الشعر ليبدو أفضل وأكثر أناقة بشكل طبيعي.",
+        "edit_beard": "حافظ على نفس الشخص وحسّن شكل اللحية وجعلها مرتبة وأنيقة.",
+        "edit_background": "حافظ على نفس الشخص وغيّر الخلفية إلى خلفية أجمل واحترافية.",
+        "edit_lighting": "حافظ على نفس الشخص وحسّن الإضاءة بشكل احترافي جدًا.",
+        "edit_colors": "حافظ على نفس الشخص وحسّن الألوان والتباين بشكل احترافي.",
+        "edit_portrait": "حوّل هذه الصورة إلى بورتريه احترافي مع الحفاظ على نفس الشخص والوجه.",
+        "edit_skin": "حافظ على نفس الشخص وحسّن البشرة بشكل طبيعي واحترافي بدون مبالغة.",
+        "edit_luxury": "حافظ على نفس الشخص واجعل الصورة تبدو فخمة جدًا وراقية من حيث اللباس والإضاءة والخلفية.",
+        "edit_style": "حافظ على نفس الشخص وغير اللوك إلى ستايل أكثر جاذبية وعصرية.",
+    }
+
+
+async def send_generated_image(chat_id: int, prompt: str, style: str, context: ContextTypes.DEFAULT_TYPE):
+    image_bytes = generate_image_bytes(prompt, style=style)
+
+    bio = BytesIO(image_bytes)
+    bio.name = "generated.png"
+    bio.seek(0)
+
+    await context.bot.send_photo(
+        chat_id=chat_id,
+        photo=bio,
+        caption=TEXTS[LANG]["image_generated"],
+        reply_markup=image_style_keyboard(LANG)
+    )
+
+
+async def send_edited_image(chat_id: int, file_id: str, instruction: str, context: ContextTypes.DEFAULT_TYPE):
+    tg_file = await context.bot.get_file(file_id)
+    image_data = await tg_file.download_as_bytearray()
+    edited_bytes = edit_image_bytes(bytes(image_data), instruction)
+
+    bio = BytesIO(edited_bytes)
+    bio.name = "edited.png"
+    bio.seek(0)
+
+    await context.bot.send_photo(
+        chat_id=chat_id,
+        photo=bio,
+        caption=TEXTS[LANG]["edit_done"]
+    )
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -47,71 +150,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         TEXTS[LANG]["welcome"],
         reply_markup=menu(LANG)
-    )
-
-
-def generate_content_ideas(topic: str) -> str:
-    return (
-        f"🧠 5 أفكار محتوى عن: {topic}\n\n"
-        f"1) 3 أخطاء شائعة في {topic}\n"
-        f"2) أفضل نصيحة للمبتدئين في {topic}\n"
-        f"3) يوم في حياة شخص يعمل في {topic}\n"
-        f"4) مقارنة قبل/بعد في {topic}\n"
-        f"5) أسرار النجاح في {topic}"
-    )
-
-
-def generate_caption(topic: str) -> str:
-    return (
-        f"✍️ 3 كابشنات عن: {topic}\n\n"
-        f"1) إذا كنت تحب {topic} فهذا المحتوى لك 🔥\n\n"
-        f"2) أسرار {topic} التي لا يخبرك بها أحد 👀\n\n"
-        f"3) كل شيء يبدأ بخطوة... واليوم نتكلم عن {topic} 🚀"
-    )
-
-
-def generate_hashtags(topic: str) -> str:
-    clean = topic.replace(" ", "_")
-    return f"#️⃣ هاشتاغات مناسبة:\n\n#{clean} #{topic} #viral #fyp #reels #content #trend #tiktok"
-
-
-def generate_script(topic: str) -> str:
-    return (
-        f"🎬 سكربت فيديو عن: {topic}\n\n"
-        f"المشهد 1: بداية قوية\n"
-        f"المشهد 2: شرح مختصر\n"
-        f"المشهد 3: مثال\n"
-        f"المشهد 4: دعوة للتفاعل والمتابعة"
-    )
-
-
-def generate_video_prompt(topic: str) -> str:
-    return (
-        f"🎥 وصف فيديو احترافي عن: {topic}\n\n"
-        f"Prompt:\n"
-        f"Create a short cinematic vertical video about {topic}. "
-        f"Make it realistic, smooth camera movement, dramatic lighting, "
-        f"high detail, emotional atmosphere, 9:16 format for social media.\n\n"
-        f"المشاهد المقترحة:\n"
-        f"1) لقطة افتتاحية قوية\n"
-        f"2) حركة كاميرا بطيئة على العنصر الرئيسي\n"
-        f"3) لقطة وسطية فيها تفاصيل واضحة\n"
-        f"4) نهاية جذابة مناسبة لريلز أو تيك توك"
-    )
-
-
-async def send_generated_image(chat_id: int, prompt: str, style: str, context: ContextTypes.DEFAULT_TYPE):
-    image_bytes = generate_image_bytes(prompt, style=style)
-
-    bio = BytesIO(image_bytes)
-    bio.name = "generated.png"
-    bio.seek(0)
-
-    await context.bot.send_photo(
-        chat_id=chat_id,
-        photo=bio,
-        caption=TEXTS[LANG]["image_generated"],
-        reply_markup=image_style_keyboard(LANG)
     )
 
 
@@ -190,23 +228,23 @@ async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     state = USER_STATES.get(user.id)
 
     if state == "content_ideas":
-        await update.message.reply_text(generate_content_ideas(msg))
         USER_STATES.pop(user.id, None)
+        await update.message.reply_text(ask_ai(content_ideas_prompt(msg)))
         return
 
     if state == "captions":
-        await update.message.reply_text(generate_caption(msg))
         USER_STATES.pop(user.id, None)
+        await update.message.reply_text(ask_ai(captions_prompt(msg)))
         return
 
     if state == "hashtags":
-        await update.message.reply_text(generate_hashtags(msg))
         USER_STATES.pop(user.id, None)
+        await update.message.reply_text(ask_ai(hashtags_prompt(msg)))
         return
 
     if state == "video_script":
-        await update.message.reply_text(generate_script(msg))
         USER_STATES.pop(user.id, None)
+        await update.message.reply_text(ask_ai(script_prompt(msg)))
         return
 
     if state == "image_ai":
@@ -223,7 +261,29 @@ async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if state == "video_ai":
         USER_STATES.pop(user.id, None)
         await update.message.reply_text(TEXTS[LANG]["video_generating"])
-        await update.message.reply_text(generate_video_prompt(msg))
+        try:
+            await update.message.reply_text(ask_ai(video_prompt(msg)))
+        except Exception as e:
+            await update.message.reply_text(f"{TEXTS[LANG]['video_failed']}\n{str(e)}")
+        return
+
+    if state == "waiting_custom_edit_instruction":
+        USER_STATES.pop(user.id, None)
+
+        file_id = LAST_USER_PHOTOS.get(user.id)
+        if not file_id:
+            await update.message.reply_text(TEXTS[LANG]["please_send_photo_first"])
+            return
+
+        await update.message.reply_text(TEXTS[LANG]["edit_generating"])
+        try:
+            instruction = (
+                "حافظ على نفس الشخص ونفس ملامح الوجه قدر الإمكان، "
+                "ونفّذ هذا الطلب بدقة: " + msg
+            )
+            await send_edited_image(update.effective_chat.id, file_id, instruction, context)
+        except Exception as e:
+            await update.message.reply_text(f"{TEXTS[LANG]['edit_failed']}\n{str(e)}")
         return
 
 
@@ -309,8 +369,26 @@ async def photo_edit_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     await query.answer()
 
-    if user.id not in LAST_USER_PHOTOS:
+    file_id = LAST_USER_PHOTOS.get(user.id)
+    if not file_id:
         await query.message.reply_text(TEXTS[LANG]["please_send_photo_first"])
         return
 
-    await query.message.reply_text(TEXTS[LANG]["edit_feature_soon"])
+    data = query.data
+
+    if data == "edit_custom":
+        USER_STATES[user.id] = "waiting_custom_edit_instruction"
+        await query.message.reply_text(TEXTS[LANG]["edit_custom_prompt"])
+        return
+
+    instruction = preset_instruction_map().get(data)
+    if not instruction:
+        await query.message.reply_text(TEXTS[LANG]["edit_failed"])
+        return
+
+    await query.message.reply_text(TEXTS[LANG]["edit_generating"])
+
+    try:
+        await send_edited_image(query.message.chat_id, file_id, instruction, context)
+    except Exception as e:
+        await query.message.reply_text(f"{TEXTS[LANG]['edit_failed']}\n{str(e)}")
